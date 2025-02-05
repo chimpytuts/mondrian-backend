@@ -104,14 +104,14 @@ export class EmbrService {
         //}
 
             const { pool: embrAusdPool } = await balancerSubgraphService.getPool({
-                id: '0x011c0eb92053b64cbf6bef9dfc9ee3005ce6c16700020000000000000000001b',
+                id: '0x2f633f75ead9b12250828f3fb87c73e2a9acefbb000200000000000000000001',
             });
 
             
 
 
             const { pool: embrWavaxPool } = await balancerSubgraphService.getPool({
-                id: '0x87763afda4bcc6e4ae30f46adf969f8cf9d68215000200000000000000000029',
+                id: '0x2b5a28631c738af371a8f103156bacd6ee120829000200000000000000000000',
             });
 
             const embr = (embrWavaxPool ?.tokens ?? []).find((token) => token.address === env.EMBR_ADDRESS.toLowerCase());
@@ -130,11 +130,12 @@ export class EmbrService {
             console.log("embr weight: "+embr.weight)              
 
             //xploited getEmbrData 0.8 0.5 296.342522769214859558 2015316.698115856827299486
-            //const embrPrice = parseFloat(embrWavaxPool.totalLiquidity) / parseFloat(embrWavaxPool.totalShares);
-            const ethPrice = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
-            const embrPrice =
-            (((parseFloat(embr.weight || '0') / parseFloat(ausd.weight || '1')) * parseFloat(ausd.balance)) /
-            parseFloat(embr.balance))*ethPrice.data.ethereum.usd;
+            const embrPrice = parseFloat(embrAusdPool ? embrAusdPool.totalLiquidity : '0') / parseFloat(embrAusdPool ? embrAusdPool.totalShares : '0');
+           // const ethPrice = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
+            //const embrPrice =
+            //(((parseFloat(embr.weight || '0') / parseFloat(ausd.weight || '1')) * parseFloat(ausd.balance)) /
+            //parseFloat(embr.balance))*ethPrice.data.ethereum.usd;
+
              const circulatingSupply = parseFloat(await getCirculatingSupply());
 
              console.log("xploited getEmbrData", embr.weight, embr.balance, embrPrice, circulatingSupply)

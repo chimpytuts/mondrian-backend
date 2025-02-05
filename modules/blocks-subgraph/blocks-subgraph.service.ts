@@ -30,14 +30,14 @@ const BLOCK_TIME_MAP: { [chainId: string]: number } = {
     '43113': 3,
     '43114': 3,
     '106': 3,
-    '2741': 3,
+    '2741': 1,
 };
 
 export class BlocksSubgraphService {
     private readonly client: GraphQLClient;
 
     constructor() {
-        this.client = new GraphQLClient("https://api.studio.thegraph.com/query/103048/blocks-abstract/version/latest");
+        this.client = new GraphQLClient("https://gateway.thegraph.com/api/1a519fef2dae1dc4d39ad60c48771cd8/subgraphs/id/AiwDTWLpa5HDx63QHK8A4Ws8L5f6cFFj64btBS2G33HW");
     }
 
     public async getAverageBlockTime(): Promise<number> {

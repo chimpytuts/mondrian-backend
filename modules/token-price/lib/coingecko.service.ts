@@ -7,6 +7,7 @@ import moment from 'moment-timezone';
 import { tokenService } from '../../token/token.service';
 import { TokenDefinition } from '../../token/token-types';
 import { getAddress, isAddress } from 'ethers/lib/utils';
+import { embrService } from '../../embr/embr.service';
 
 interface MappedToken {
     platform: string;
@@ -21,6 +22,13 @@ export class CoingeckoService {
     private readonly platformId: string;
     private readonly nativeAssetId: string;
     private readonly nativeAssetAddress: string;
+    private priceCache: {
+        [key: string]: {
+            price: Price;
+            timestamp: number;
+        };
+    } = {};
+    private readonly CACHE_DURATION = 2 * 60 * 1000; // 2 minutes in milliseconds
 
     constructor() {
         this.baseUrl = 'https://api.coingecko.com/api/v3';
@@ -31,58 +39,74 @@ export class CoingeckoService {
         this.nativeAssetAddress = env.NATIVE_ASSET_ADDRESS;
     }
 
-    public async getNativeAssetPrice(): Promise<Price> {
-        try {
-            const response = await this.get<PriceResponse>(
-                `/simple/price?ids=${this.nativeAssetId}&vs_currencies=${this.fiatParam}`,
-            );
+    private async getCachedPrice(key: string, fetchFn: () => Promise<Price>): Promise<Price> {
+        const now = Date.now();
+        const cached = this.priceCache[key];
 
-            //console.log("xploited get native asset price", `/simple/price?ids=${this.nativeAssetId}&vs_currencies=${this.fiatParam}`, response)
-            return response[this.nativeAssetId];
+        // Return cached price if it's less than 2 minutes old
+        if (cached && (now - cached.timestamp) < this.CACHE_DURATION) {
+            return cached.price;
+        }
+
+        try {
+            // If cache is expired or doesn't exist, fetch new price
+            const newPrice = await fetchFn();
+            this.priceCache[key] = {
+                price: newPrice,
+                timestamp: now
+            };
+            return newPrice;
         } catch (error) {
-            console.error('Unable to fetch Avax price', error);
+            // If fetch fails and we have any cached price, return it regardless of age
+            if (cached) {
+                console.warn(`Using stale cached price for ${key} due to fetch error`);
+                return cached.price;
+            }
             throw error;
         }
+    }
+
+    public async getNativeAssetPrice(): Promise<Price> {
+        const cacheKey = `native_${this.nativeAssetId}`;
+        return this.getCachedPrice(cacheKey, async () => {
+            const response = await this.get<PriceResponse>(
+                `/simple/price?ids=${this.nativeAssetId}&vs_currencies=${this.fiatParam}`
+            );
+            return response[this.nativeAssetId];
+        });
     }
 
     /**
      *  Rate limit for the CoinGecko API is 10 calls each second per IP address.
      */
-    public async getTokenPrices(addresses: string[], addressesPerRequest = 100): Promise<TokenPrices> {
+    public async getTokenPrices(addresses: string[], addressesPerRequest = 1): Promise<TokenPrices> {
         try {
-            if (addresses.length / addressesPerRequest > 10) throw new Error('To many requests for rate limit.');
+            const results: TokenPrices = {};
+            const embrAddress = '0x11b4d31355bbbea892f53f4ba07604c9441fde80';
 
-            const tokenDefinitions = await tokenService.getTokens();
-            const mapped = addresses.map((address) => this.getMappedTokenDetails(address, tokenDefinitions));
-            const groupedByPlatform = _.groupBy(mapped, 'platform');
-
-            const requests: Promise<PriceResponse>[] = [];
-
-            _.forEach(groupedByPlatform, (tokens, platform) => {
-                const mappedAddresses = tokens.map((token) => token.address);
-                const pageCount = Math.ceil(mappedAddresses.length / addressesPerRequest);
-                const pages = Array.from(Array(pageCount).keys());
-
-                pages.forEach((page) => {
-                    const addressString = mappedAddresses.slice(
-                        addressesPerRequest * page,
-                        addressesPerRequest * (page + 1),
-                    );
-                    const endpoint = `/simple/token_price/${platform}?contract_addresses=${addressString}&vs_currencies=${this.fiatParam}`;
-                    const request = this.get<PriceResponse>(endpoint);
-                    requests.push(request);
-                });
-            });
-
-            const paginatedResults = await Promise.all(requests);
-            const results = this.parsePaginatedTokens(paginatedResults, mapped);
-
-            // Inject native asset price if included in requested addresses
-            if (addresses.includes(this.nativeAssetAddress)) {
-                results[this.nativeAssetAddress] = await this.getNativeAssetPrice();
+            // Handle each address individually with caching
+            for (const address of addresses) {
+                if (address.toLowerCase() === embrAddress.toLowerCase()) {
+                    // Handle EMBR price
+                    results[address] = await this.getCachedPrice(`token_${address}`, async () => {
+                        const embrPrice = parseFloat((await embrService.getProtocolData()).embrPrice);
+                        return { usd: embrPrice };
+                    });
+                } else if (address === this.nativeAssetAddress) {
+                    // Handle native asset price
+                    results[address] = await this.getNativeAssetPrice();
+                } else {
+                    // Handle regular token price
+                    results[address] = await this.getCachedPrice(`token_${address}`, async () => {
+                        const tokenDefinitions = await tokenService.getTokens();
+                        const mapped = this.getMappedTokenDetails(address, tokenDefinitions);
+                        const endpoint = `/simple/token_price/${mapped.platform}?contract_addresses=${mapped.address}&vs_currencies=${this.fiatParam}`;
+                        const response = await this.get<PriceResponse>(endpoint);
+                        return response[mapped.address.toLowerCase()];
+                    });
+                }
             }
 
-           // console.log("xploited get token prices", results)
             return results;
         } catch (error) {
             console.error('Unable to fetch token prices', addresses, error);
