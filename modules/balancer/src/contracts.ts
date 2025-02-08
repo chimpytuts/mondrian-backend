@@ -27,8 +27,8 @@ export const BALANCER_NETWORK_CONFIG: Record<string, BalancerNetworkConfig> = {
         multicall: '0x5AaDD9826e8804b06471F7CddAEC6F306773CE63',
     },
     '2741': {
-        vault: '0xA06e92c4A9D5Fe540666e1BFf10982d496D5A70D',
+        vault: '0x48cD08ad2065e0cD2dcD56434e393D55A59a4F64',
         weth: '0x3439153eb7af838ad19d56e1571fbd09333c2809',
-        multicall: '0xD2b77D836610b672eCfA85783020F75DDB4FAFC4',
+        multicall: '0x1c6B64878def3d5fd1b156A3A642bBd6053C3f7b',
     },
 };

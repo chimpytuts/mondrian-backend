@@ -82,7 +82,7 @@ export class CoingeckoService {
     public async getTokenPrices(addresses: string[], addressesPerRequest = 1): Promise<TokenPrices> {
         try {
             const results: TokenPrices = {};
-            const embrAddress = '0x11b4d31355bbbea892f53f4ba07604c9441fde80';
+            const embrAddress = '0x61c0940b2760C7B64aD8fd775c12D1f11c73deb2';
 
             // Handle each address individually with caching
             for (const address of addresses) {

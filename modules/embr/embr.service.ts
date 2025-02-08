@@ -103,34 +103,35 @@ export class EmbrService {
         //    return { embrPrice: '0', marketCap: '0', circulatingSupply: '0' };
         //}
 
-            const { pool: embrAusdPool } = await balancerSubgraphService.getPool({
-                id: '0x2f633f75ead9b12250828f3fb87c73e2a9acefbb000200000000000000000001',
-            });
+           // const { pool: embrAusdPool } = await balancerSubgraphService.getPool({
+           //     id: '0x2f633f75ead9b12250828f3fb87c73e2a9acefbb000200000000000000000001',
+           // });
 
             
 
 
-            const { pool: embrWavaxPool } = await balancerSubgraphService.getPool({
-                id: '0x2b5a28631c738af371a8f103156bacd6ee120829000200000000000000000000',
-            });
+            // const { pool: embrWavaxPool } = await balancerSubgraphService.getPool({
+            //     id: '0x2b5a28631c738af371a8f103156bacd6ee120829000200000000000000000000',
+            // });
 
-            const embr = (embrWavaxPool ?.tokens ?? []).find((token) => token.address === env.EMBR_ADDRESS.toLowerCase());
-            const ausd = (embrWavaxPool ?.tokens ?? []).find((token) => token.address !== env.EMBR_ADDRESS.toLowerCase());
+             //const embr = (embrWavaxPool ?.tokens ?? []).find((token) => token.address === env.EMBR_ADDRESS.toLowerCase());
+             //const ausd = (embrWavaxPool ?.tokens ?? []).find((token) => token.address !== env.EMBR_ADDRESS.toLowerCase());
 
            
-            if (!embr || !ausd || !embrWavaxPool) {
-                console.log("Embr: "+embr);
-                console.log("Embr: "+ausd);
-                console.log("Embr: "+embrWavaxPool);
+             //if (!embr || !ausd || !embrWavaxPool) {
+             //    console.log("Embr: "+embr);
+             //    console.log("Embr: "+ausd);
+             //    console.log("Embr: "+embrWavaxPool);
 
 
-                throw new Error('did not find price for embr 3');
-            }            
+             //    throw new Error('did not find price for embr 3');
+         //    }            
 
-            console.log("embr weight: "+embr.weight)              
+          //   console.log("embr weight: "+embr.weight)              
 
             //xploited getEmbrData 0.8 0.5 296.342522769214859558 2015316.698115856827299486
-            const embrPrice = parseFloat(embrAusdPool ? embrAusdPool.totalLiquidity : '0') / parseFloat(embrAusdPool ? embrAusdPool.totalShares : '0');
+            // const embrPrice = parseFloat(embrAusdPool ? embrAusdPool.totalLiquidity : '0') / parseFloat(embrAusdPool ? embrAusdPool.totalShares : '0');
+            const embrPrice = 0;
            // const ethPrice = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
             //const embrPrice =
             //(((parseFloat(embr.weight || '0') / parseFloat(ausd.weight || '1')) * parseFloat(ausd.balance)) /
@@ -138,7 +139,8 @@ export class EmbrService {
 
              const circulatingSupply = parseFloat(await getCirculatingSupply());
 
-             console.log("xploited getEmbrData", embr.weight, embr.balance, embrPrice, circulatingSupply)
+         
+         //    console.log("xploited getEmbrData", embr.weight, embr.balance, embrPrice, circulatingSupply)
 
             return {
                 embrPrice: `${embrPrice}`,
